@@ -10,14 +10,14 @@
 
 ## ✨ Features
 
-- 📄 **Convert WhatsApp chats** (.txt) into beautifully formatted PDFs
-- 🔒 **100% client-side processing** — no servers, no uploads, no tracking
-- ⚡ **Fast and responsive** UI with instant conversion
-- 🌙 **Dark Mode** support for comfortable viewing
-- 📱 **Mobile-first design** — works smoothly on all screen sizes
-- 🧼 **Clean WhatsApp-style layout** preserved in PDF output
-- 🕒 **Preserves timestamps** and original chat structure
-- 💾 **Instant PDF download** with one click
+- 📄 **Convert WhatsApp chats** (.txt) into beautifully formatted PDF.
+- 🔒 **100% client-side processing** — no servers, no api, no tracking.
+- ⚡ **Fast and responsive** UI with instant conversion.
+- 🌙 **Dark Mode** support for comfortable viewing.
+- 📱 **Mobile-first design** — works smoothly on all screen sizes.
+- 🧼 **Clean WhatsApp-style layout** preserved in PDF output.
+- 🕒 **Preserves timestamps** and original chat structure.
+- 💾 **Instant PDF download** with one click.
 
 ---
 
@@ -25,7 +25,7 @@
 
 WhatsApp doesn't offer a native way to save chats in a clean, shareable format. WAC-Saver solves this problem by:
 
-- Converting messy `.txt` exports into professional PDFs
+- Converting messy `.txt` exports into professional PDF
 - Processing everything locally for **complete privacy**
 - Maintaining the original chat structure and readability
 - Providing a fast, no-nonsense solution without sign-ups or subscriptions
