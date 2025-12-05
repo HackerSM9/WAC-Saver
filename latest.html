@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="https://hackersm9.github.io/WAC-Saver/wacsaver.png">
+    <title>WAC-Saver</title>
+
+    <style>
+        /* =========================================
+           1. APP STYLES (From app.html)
+           ========================================= */
+        :root {
+            --page-bg: #0b1113;
+            --panel-bg: #0b1418;
+            --header-bg: #202628;
+            --incoming-bg: #202c33;
+            --outgoing-bg: #005c4b;
+            --system-bg: #182229;
+            --system-text: #d1d7db;
+            --muted: #8696a0;
+            --text: #e9edef;
+            --name-sent: #25d366;
+            --name-received: #00a884;
+            --encryption-text: #ffc966;
+            --deleted-incoming-bg: #2b2f31;
+            --deleted-text: #a4a7aa;
+            --deleted-icon-bg: rgba(255,255,255,0.06);
+            --business-encryption-bg: #0f2b2a;
+            --business-encryption-text: #8fd7c4;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--page-bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent double scrollbars during transition */
+        }
+
+        /* Helper class to hide elements */
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- APP HEADER --- */
+        .header {
+            background: var(--header-bg);
+            padding: 10px 16px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            z-index:100;
+        }
+
+        .header-left { display:flex; align-items:center; gap:12px; }
+        .header-icon {
+            width:40px; height:40px; background:#00a884; border-radius:50%;
+            display:flex; align-items:center; justify-content:center; font-size:20px;
+        }
+        .header-title h1 { font-size:19px; font-weight:500; color:var(--text); }
+        .header-title p { font-size:12px; color:var(--muted); margin-top:2px; }
+
+        .header-buttons { display:flex; gap:8px; }
+        .btn {
+            padding:8px 16px; border-radius:8px; border:none; font-size:14px; font-weight:500; cursor:pointer;
+            display:flex; align-items:center; gap:6px; transition:all .2s;
+        }
+        .btn-primary { background:#00a884; color:white; }
+        .btn-primary:hover { background:#06cf9c; }
+        .btn-secondary { background:#2a3942; color:var(--text); border:1px solid #3b4a54; }
+        .btn-secondary:hover { background:#374248; }
+        .btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+        /* --- CHAT CONTAINER --- */
+        .chat-container {
+            flex:1; overflow-y:auto;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(24,34,41,0.03) 10px, rgba(24,34,41,0.03) 20px);
+            background-color: var(--panel-bg);
+            padding:20px 6%;
+        }
+
+        .chat-content { max-width:1100px; margin:0 auto; }
+
+        .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--muted); text-align:center; padding:40px; }
+        .empty-icon { font-size:64px; margin-bottom:16px; opacity:0.5; }
+        .empty-state h2 { font-size:20px; margin-bottom:8px; font-weight:400; }
+        .empty-state p { font-size:14px; opacity:0.7; }
+
+        .date-separator { text-align:center; margin:20px 0 12px 0; }
+        .date-badge { display:inline-block; background:var(--system-bg); color:var(--muted); padding:5px 12px; border-radius:7.5px; font-size:12.5px; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
+
+        .message { display:flex; margin-bottom:0; animation:fadeIn .3s ease-in; clear:both; }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+        .message.sent { justify-content:flex-end; }
+        .message.received { justify-content:flex-start; }
+
+        .bubble {
+            position:relative;
+            max-width:65%;
+            padding:6px 7px 8px 9px;
+            box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+            word-wrap:break-word;
+            margin-bottom:2px;
+            overflow:visible;
+            border-radius:7.5px 7.5px 7.5px 7.5px;
+        }
+        
+        .bubble.first-in-block { margin-top: 8px; }
+        .bubble.last-in-block { margin-bottom: 12px; }
+
+        .bubble.sent { background:var(--outgoing-bg); color:var(--text); }
+        .bubble.received { background:var(--incoming-bg); color:var(--text); }
+
+        .bubble.first-in-block::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 12px;
+            height: 12px;
+        }
+
+        .bubble.sent.first-in-block::after {
+            right: -6px;
+            background: var(--outgoing-bg);
+            clip-path: polygon(0 0, 100% 0, 0 100%);
+        }
+
+        .bubble.received.first-in-block::after {
+            left: -6px;
+            background: var(--incoming-bg);
+            clip-path: polygon(100% 0, 100% 100%, 0 0);
+        }
+
+        .sender-name { font-weight:500; font-size:13px; margin-bottom:3px; }
+        .bubble.sent .sender-name { color:var(--name-sent); }
+        .bubble.received .sender-name { color:var(--name-received); }
+
+        .message-text { font-size:14.2px; line-height:19px; white-space:pre-wrap; word-break:break-word; display:flex; align-items:center; gap:8px; }
+
+        .message-footer { display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:6px; font-size:11px; }
+        .bubble.sent .message-footer { color: rgba(209, 215, 219, 0.7); }
+        .bubble.received .message-footer { color: rgba(139, 149, 158, 0.8); }
+
+        .edited-label { font-size:11px; color: rgba(209,215,219,0.75); margin-right:6px; font-weight:500; }
+
+        .bubble.deleted { padding-left: 12px; }
+        .bubble.deleted .message-text { font-style: italic; color: var(--deleted-text); }
+        .bubble.deleted.received { background: var(--deleted-incoming-bg); color: var(--deleted-text); }
+        .bubble.deleted.sent { background: var(--outgoing-bg); }
+
+        .delete-icon {
+            display:inline-flex; align-items:center; justify-content:center;
+            width:18px; height:18px; border-radius:50%;
+            background: var(--deleted-icon-bg); color: var(--deleted-text);
+            font-size:12px; flex:0 0 18px; margin-right:8px;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.15) inset;
+        }
+
+        .bubble.deleted .message-footer { color: var(--muted); }
+
+        .file-attachment { display:flex; align-items:center; gap:6px; padding:8px 10px; background:rgba(11,20,26,0.3); border-radius:7.5px; margin-bottom:4px; font-size:13px; }
+
+        .system-message { text-align:center; margin:12px auto; font-size:12.5px; color:var(--muted); background:var(--system-bg); padding:6px 12px; border-radius:7.5px; display:inline-block; max-width:85%; box-shadow:0 1px 2px rgba(0,0,0,0.2); line-height:1.4; }
+        span.system-message.encryption { color: var(--encryption-text); }
+        .system-message.encryption::before { content: '🔒 '; font-size:14px; }
+
+        .system-message.business { background: var(--business-encryption-bg); color: var(--business-encryption-text); }
+        .system-message.business.encryption::before { content: '🔒 '; font-size:14px; }
+
+        .chat-container::-webkit-scrollbar { width:6px; }
+        .chat-container::-webkit-scrollbar-track { background:transparent; }
+        .chat-container::-webkit-scrollbar-thumb { background:#374248; border-radius:3px; }
+
+        .loading { text-align:center; padding:20px; color:var(--muted); }
+
+        /* --- FOOTER STYLES --- */
+        .footer {
+            background: var(--header-bg);
+            padding: 16px;
+            text-align: center;
+            border-top: 1px solid #374248;
+            box-shadow: 0 -1px 2px rgba(0,0,0,0.3);
+        }
+
+        .footer p { margin: 4px 0; font-size: 13px; color: var(--muted); }
+        .footer p:first-child { font-weight: 500; }
+
+        @media (max-width:768px) {
+            .chat-container { padding:12px 4%; }
+            .bubble { max-width:80%; }
+            .header-buttons { flex-direction:column; }
+            .btn { padding:6px 12px; font-size:12px; }
+        }
+
+        #fileInput { display:none; }
+        
+        @media print {
+            @page { margin: 0.5cm; background-color: var(--panel-bg); }
+            body { background: var(--panel-bg) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; height: auto; overflow: visible; }
+            .header { display: none !important; }
+            .footer { display: none !important; }
+            .chat-container { background: var(--panel-bg) !important; background-image: none !important; overflow: visible !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; height: auto; padding: 0; }
+            .chat-content { -webkit-print-color-adjust: exact; print-color-adjust: exact; max-width: 100%; }
+            .message { page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bubble { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none; }
+            .bubble.sent { background: var(--outgoing-bg) !important; }
+            .bubble.received { background: var(--incoming-bg) !important; }
+            .date-badge, .system-message { background: var(--system-bg) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bubble.sent.first-in-block::after { background: var(--outgoing-bg) !important; }
+            .bubble.received.first-in-block::after { background: var(--incoming-bg) !important; }
+        }
+
+        /* =========================================
+           2. SPLASH SCREEN STYLES (From index.html)
+           ========================================= */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0A0F13; /* WhatsApp-style dark */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            color: white;
+            z-index: 9999; /* Ensure it stays on top */
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        }
+
+        /* LOGO POSITION (WhatsApp accurate) */
+        .logo-container {
+            margin-top: 26vh; /* same top spacing as WhatsApp */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo {
+            width: 150px;      /* Perfect size */
+            height: auto;
+            user-select: none;
+        }
+
+        /* BOTTOM TEXT (2-line like “from Meta”) */
+        .bottom-container {
+            position: absolute;
+            bottom: 6vh;       /* same bottom margin as WhatsApp */
+            text-align: center;
+            opacity: 0.70;
+        }
+
+        .bottom-text-top {
+            font-size: 15px;
+            font-weight: 300;
+            color: #B0B0B0;
+            margin-bottom: 3px;
+        }
+
+        .bottom-text-bottom {
+            font-size: 18px;
+            font-weight: 500;
+            color: #E0E0E0;
+        }
+        
+        /* Fade out utility */
+        .splash-fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+    </style>
+
+</head>
+<body>
+
+    <!-- =========================================
+         1. SPLASH SCREEN CONTENT
+         ========================================= -->
+    <div id="splash-screen">
+        <!-- LOGO -->
+        <div class="logo-container">
+            <img src="https://hackersm9.github.io/WAC-Saver/WAC-Saver.png" class="logo" alt="WAC Saver Logo">
+        </div>
+
+        <!-- BOTTOM TEXT -->
+        <div class="bottom-container">
+            <div class="bottom-text-top">from</div>
+            <div class="bottom-text-bottom">Samarth Magdum</div>
+        </div>
+    </div>
+
+    <!-- =========================================
+         2. MAIN APP CONTENT
+         (Wrapped in a div to be revealed later)
+         ========================================= -->
+    <div id="app-wrapper" class="hidden" style="height: 100%; display: flex; flex-direction: column; flex: 1;">
+        
+        <div class="header">
+            <div class="header-left">
+                <div class="header-icon">💬</div>
+                <div class="header-title">
+                    <h1>WhatsApp Chat Viewer</h1>
+                    <p id="fileName">No file loaded</p>
+                </div>
+            </div>
+            <div class="header-buttons">
+                <label for="fileInput" class="btn btn-primary">📤 Upload Chat</label>
+                <input type="file" id="fileInput" accept=".txt" />
+                <button class="btn btn-secondary" id="exportBtn" style="display:none">📥 Export PDF</button>
+            </div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-content" id="chatContent">
+                <div class="empty-state">
+                    <div class="empty-icon">💬</div>
+                    <h2>No Chat Loaded</h2>
+                    <p>Upload a WhatsApp exported .txt file to view your chat</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- COPYRIGHT FOOTER (Restored) -->
+        <div class="footer">
+            <p>© 2025 WAC-Saver — All Rights Reserved.</p>
+            <p>Created & Owned by Samarth Magdum.</p>
+        </div>
+    </div>
+
+    <!-- =========================================
+         3. JAVASCRIPT LOGIC
+         ========================================= -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- SPLASH SCREEN LOGIC ---
+            const splashScreen = document.getElementById('splash-screen');
+            const appWrapper = document.getElementById('app-wrapper');
+            
+            // NOTE: Using sessionStorage here. 
+            // - If the user reloads the page, the splash screen will show again (Standard App Behavior).
+            // - If you want to hide it on reload, change sessionStorage to localStorage.
+            
+            // Show App Function
+            const showApp = () => {
+                splashScreen.classList.add('splash-fade-out');
+                // Wait for fade transition (0.5s) then hide completely and show app
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    appWrapper.classList.remove('hidden');
+                }, 500); 
+            };
+
+            // Main Execution
+            // Delay 2.5 seconds to match original design
+            setTimeout(() => {
+                showApp();
+            }, 2500);
+
+
+            // --- APP LOGIC (Copied from app.html) ---
+            let currentChatData = null;
+            let receiverName = '';
+
+            const fileInput = document.getElementById('fileInput');
+            const chatContent = document.getElementById('chatContent');
+            const chatContainer = document.getElementById('chatContainer');
+            const exportBtn = document.getElementById('exportBtn');
+            const fileNameDisplay = document.getElementById('fileName');
+
+            fileInput.addEventListener('change', handleFileUpload);
+            exportBtn.addEventListener('click', exportToPDF);
+
+            async function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                fileNameDisplay.textContent = file.name;
+                chatContent.innerHTML = '<div class="loading">Loading chat...</div>';
+
+                try {
+                    const text = await readFileAsUTF8(file);
+                    const data = parseWhatsAppChat(text);
+
+                    if (data.messages.length === 0) {
+                        chatContent.innerHTML = '<div class="empty-state"><h2>No Messages Found</h2><p>Please check the file format</p></div>';
+                        return;
+                    }
+
+                    currentChatData = data;
+                    receiverName = data.receiverName; 
+                    renderChat(data);
+                    exportBtn.style.display = 'flex';
+
+                    setTimeout(() => {
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }, 100);
+                } catch (error) {
+                    console.error('Error reading file:', error);
+                    chatContent.innerHTML = '<div class="empty-state"><h2>Error Reading File</h2><p>Please try again</p></div>';
+                }
+            }
+
+            function readFileAsUTF8(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file, 'UTF-8');
+                });
+            }
+
+            function parseWhatsAppChat(text) {
+                const lines = text.split('\n');
+                const messages = [];
+                const senderCounts = {};
+                let currentMessage = null;
+
+                const patterns = [
+                    /^(\d{1,2}\/\d{1,2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*(am|pm|AM|PM|午前|午後)?\s*-\s*([^:]+):\s*(.+)$/i,
+                    /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*(am|pm|AM|PM)?\]\s*([^:]+):\s*(.+)$/i,
+                    /^(\d{1,2}\/\d{1,2}\/\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*(am|pm|AM|PM|午前|午後)?\s*-\s*(.+)$/i
+                ];
+
+                for (let rawLine of lines) {
+                    let line = rawLine.trim();
+                    if (!line) continue;
+
+                    let matched = false;
+
+                    for (let pattern of patterns) {
+                        const match = line.match(pattern);
+                        if (match) {
+                            if (currentMessage) {
+                                messages.push(currentMessage);
+                                if (!currentMessage.isSystem) {
+                                    senderCounts[currentMessage.sender] = (senderCounts[currentMessage.sender] || 0) + 1;
+                                }
+                            }
+
+                            let date, time, ampm, sender, message;
+                            if (pattern === patterns[0] || pattern === patterns[1]) {
+                                [, date, time, ampm, sender, message] = match;
+                                let formattedTime = time.trim();
+                                if (ampm) formattedTime += ' ' + ampm.toLowerCase().trim();
+
+                                currentMessage = {
+                                    date: date.trim(),
+                                    time: formattedTime,
+                                    sender: sender.trim(),
+                                    message: message.trim(),
+                                    isSystem: false
+                                };
+
+                                if (message.toLowerCase().includes('is a contact') || sender.toLowerCase().includes('system')) {
+                                    currentMessage.isSystem = true;
+                                }
+                            } else {
+                                [, date, time, ampm, message] = match;
+                                let formattedTime = time.trim();
+                                if (ampm) formattedTime += ' ' + ampm.toLowerCase().trim();
+
+                                currentMessage = {
+                                    date: date.trim(),
+                                    time: formattedTime,
+                                    sender: 'System',
+                                    message: message.trim(),
+                                    isSystem: true
+                                };
+                            }
+
+                            matched = true;
+                            break;
+                        }
+                    }
+
+                    if (!matched) {
+                        if (currentMessage && !currentMessage.isSystem) {
+                            currentMessage.message += '\n' + line;
+                        } else {
+                            currentMessage = {
+                                date: '',
+                                time: '',
+                                sender: 'System',
+                                message: line,
+                                isSystem: true
+                            };
+                            messages.push(currentMessage);
+                            currentMessage = null;
+                        }
+                    }
+                }
+
+                if (currentMessage) {
+                    messages.push(currentMessage);
+                    if (!currentMessage.isSystem) {
+                        senderCounts[currentMessage.sender] = (senderCounts[currentMessage.sender] || 0) + 1;
+                    }
+                }
+
+                const sortedSenders = Object.entries(senderCounts)
+                    .sort((a,b) => b[1] - a[1])
+                    .map(e => e[0]);
+
+                const myName = sortedSenders[0] || '';
+                const localReceiverName = sortedSenders[1] || 'Contact';
+
+                messages.forEach(msg => {
+                    msg.isMine = msg.sender === myName;
+
+                    const editedTagRegex = /<[^>]*edited[^>]*>/i;
+                    if (!msg.isSystem && editedTagRegex.test(msg.message)) {
+                        msg.isEdited = true;
+                        msg.message = msg.message.replace(editedTagRegex, '').trim();
+                    } else {
+                        msg.isEdited = false;
+                    }
+
+                    if (!msg.isSystem) {
+                        const lower = msg.message.toLowerCase();
+                        if (lower === 'you deleted this message' || lower === 'this message was deleted' || lower.includes('deleted this message')) {
+                            msg.isDeleted = true;
+                            if (msg.isMine) {
+                                msg.message = 'You deleted this message';
+                            } else {
+                                msg.message = 'This message was deleted';
+                            }
+                        } else {
+                            msg.isDeleted = false;
+                        }
+                    } else {
+                        msg.isDeleted = false;
+                    }
+
+                    if (msg.isSystem && (msg.message.toLowerCase().includes('end-to-end encrypted') || msg.message.toLowerCase().includes('messages and calls are'))) {
+                        msg.isEncryption = true;
+                    } else {
+                        msg.isEncryption = false;
+                    }
+                    
+                    if (msg.isSystem && (
+                        msg.message.toLowerCase().includes('this business works') ||
+                        msg.message.toLowerCase().includes('this business is now working') ||
+                        msg.message.toLowerCase().includes('this business is now using')
+                    )) {
+                        msg.isBusiness = true;
+                    } else {
+                        msg.isBusiness = false;
+                    }
+                });
+
+                return { messages, myName, receiverName: localReceiverName };
+            }
+
+            function renderChat(data) {
+                const { messages } = data;
+                chatContent.innerHTML = '';
+
+                let lastDate = '';
+                let lastSender = null;
+                let lastTime = null;
+                let lastShownTime = null;
+
+                messages.forEach((msg, index) => {
+                    if (msg.date && msg.date !== lastDate) {
+                        const dateSeparator = document.createElement('div');
+                        dateSeparator.className = 'date-separator';
+                        dateSeparator.innerHTML = `<span class="date-badge">${formatDate(msg.date)}</span>`;
+                        chatContent.appendChild(dateSeparator);
+                        lastDate = msg.date;
+                    }
+
+                    if (msg.isSystem) {
+                        const systemMsg = document.createElement('div');
+                        systemMsg.style.textAlign = 'center';
+
+                        let cssClass = 'system-message';
+                        if (msg.isEncryption) cssClass += ' encryption';
+                        if (msg.isBusiness) cssClass += ' business';
+
+                        systemMsg.innerHTML = `<span class="${cssClass}">${msg.message}</span>`;
+                        chatContent.appendChild(systemMsg);
+                        lastSender = null;
+                        lastTime = null;
+                        lastShownTime = null;
+                        return;
+                    }
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${msg.isMine ? 'sent' : 'received'}`;
+
+                    const bubble = document.createElement('div');
+                    bubble.className = `bubble ${msg.isMine ? 'sent' : 'received'}`;
+
+                    if (msg.isDeleted) {
+                        bubble.classList.add('deleted');
+                    }
+
+                    const isFirstInBlock = msg.sender !== lastSender;
+                    
+                    let isLastInBlock = false;
+                    for (let i = index + 1; i < messages.length; i++) {
+                        if (!messages[i].isSystem) {
+                            isLastInBlock = messages[i].sender !== msg.sender;
+                            break;
+                        }
+                    }
+                    if (index === messages.length - 1 || (isLastInBlock && index + 1 === messages.length)) {
+                        isLastInBlock = true;
+                    }
+                    let allRemainingAreSystem = true;
+                    for (let i = index + 1; i < messages.length; i++) {
+                        if (!messages[i].isSystem) {
+                            allRemainingAreSystem = false;
+                            break;
+                        }
+                    }
+                    if (allRemainingAreSystem) {
+                        isLastInBlock = true;
+                    }
+
+                    if (isFirstInBlock) {
+                        bubble.classList.add('first-in-block');
+
+                        const senderName = document.createElement('div');
+                        senderName.className = 'sender-name';
+                        senderName.textContent = msg.sender;
+                        bubble.appendChild(senderName);
+
+                        lastSender = msg.sender;
+                        lastTime = null;
+                        lastShownTime = null;
+                    }
+                    
+                    if (isLastInBlock) {
+                        bubble.classList.add('last-in-block');
+                    }
+
+                    if (msg.isDeleted) {
+                        const messageText = document.createElement('div');
+                        messageText.className = 'message-text';
+
+                        const iconSpan = document.createElement('span');
+                        iconSpan.className = 'delete-icon';
+                        iconSpan.setAttribute('aria-hidden', 'true');
+                        iconSpan.textContent = '🚫';
+
+                        const textSpan = document.createElement('span');
+                        textSpan.textContent = msg.message;
+
+                        messageText.appendChild(iconSpan);
+                        messageText.appendChild(textSpan);
+                        bubble.appendChild(messageText);
+                    } else {
+                        if (msg.message.includes('(file attached)') || msg.message.match(/\.(jpg|png|pdf|jpeg|gif|mp4|mp3)$/i)) {
+                            const fileDiv = document.createElement('div');
+                            fileDiv.className = 'file-attachment';
+                            fileDiv.innerHTML = `📎 ${msg.message}`;
+                            bubble.appendChild(fileDiv);
+                        } else {
+                            const messageText = document.createElement('div');
+                            messageText.className = 'message-text';
+                            messageText.textContent = msg.message;
+                            bubble.appendChild(messageText);
+                        }
+                    }
+
+                    const footer = document.createElement('div');
+                    footer.className = 'message-footer';
+
+                    const shouldShowTimestamp = (msg.time !== lastShownTime);
+                    
+                    if (msg.isEdited && !msg.isDeleted) {
+                        const editedSpan = document.createElement('span');
+                        editedSpan.className = 'edited-label';
+                        editedSpan.textContent = 'Edited';
+                        footer.appendChild(editedSpan);
+                    }
+
+                    if (shouldShowTimestamp) { 
+                        const timeSpan = document.createElement('span');
+                        timeSpan.className = 'time-text';
+                        timeSpan.textContent = msg.time;
+                        footer.appendChild(timeSpan);
+                        lastShownTime = msg.time;
+                    }
+
+                    if (footer.children.length > 0) {
+                        bubble.appendChild(footer);
+                    }
+
+                    messageDiv.appendChild(bubble);
+                    chatContent.appendChild(messageDiv);
+                    
+                    lastTime = msg.time;
+                });
+            }
+
+            function exportToPDF() {
+                window.print();
+            }
+
+            function formatDate(dateStr) {
+                if (!dateStr) return '';
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1;
+                    const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+                    if (!isNaN(month) && months[month]) {
+                        return `${day} ${months[month]} ${year}`;
+                    }
+                }
+                return dateStr;
+            }
+        });
+    </script>
+
+</body>
+</html>
