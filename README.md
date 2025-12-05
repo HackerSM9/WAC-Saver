@@ -1,4 +1,4 @@
-# 📄 WAC-Saver — WhatsApp Chat Saver & PDF Converter
+# 📄 WAC-Saver — WhatsApp Chat Saver
 
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
