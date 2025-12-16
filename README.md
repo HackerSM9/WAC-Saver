@@ -129,7 +129,7 @@ Created & Owned by **Samarth Magdum**.
 
 For questions, permissions, or business inquiries:
 
-- 📧 Email: **[hackersm9@proton.me]**
+- 📧 Email: **[developersm9@proton.me]**
 - 🌐 Website: **[https://hackersm9.github.io/]**
 - 💼 LinkedIn: **[https://www.linkedin.com/in/hackersm9]**
 - 🐦 X: **[@the.hackersm9]**
