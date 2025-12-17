@@ -1,8 +1,8 @@
 # 📄 WAC Saver (WhatsApp Chat Saver)
 
-![License](https://img.shields.io/badge/license-Proprietary-red)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Status](https://img.shields.io/badge/status-active-success)
+![License](https://img.shields.io/badge/License-Proprietary-red)
+![Version](https://img.shields.io/badge/Version-1.0.0-blue)
+![Status](https://img.shields.io/badge/Status-ACTIVE-success)
 
 **WAC-Saver** is a lightweight, fast, and secure web application that converts original WhatsApp chats into clean, well-formatted PDF file. All processing happens **locally on your device** — ensuring maximum privacy and zero data risk.
 
@@ -43,6 +43,11 @@ WhatsApp doesn't offer a native way to save chats in a clean, shareable format. 
 
 ---
 
+## 📸 Screenshots
+(Going to Add Soon!)
+
+ ---
+
 ## 🛠️ Tech Stack
 
 | Technology | Purpose |
@@ -67,12 +72,6 @@ WAC-Saver is **completely client-side**, meaning:
 | Your privacy | ✅ 100% protected |
 
 **Your chats never leave your device. Period.**
-
----
-
-## 📸 Screenshots
-
-(Going to Add Soon!)
 
 ---
 
