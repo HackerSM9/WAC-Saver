@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hackersm9.github.io/WAC-Saver/sitemap.xml
